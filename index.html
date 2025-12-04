@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Mobile 3D Tree</title>
+    <style>
+      body {
+        margin: 0;
+        background-color: #111;
+        color: #eee;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          Helvetica, Arial, sans-serif;
+        overflow: hidden; /* 전체 스크롤 방지 */
+        touch-action: none; /* 모바일에서 불필요한 제스처 방지 */
+      }
+
+      /* 설정 토글 버튼 (플로팅 버튼) */
+      .toggle-btn {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        width: 50px;
+        height: 50px;
+        background-color: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        border-radius: 50%;
+        color: white;
+        font-size: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 10000;
+        backdrop-filter: blur(5px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        transition: transform 0.2s;
+      }
+      .toggle-btn:active {
+        transform: scale(0.9);
+      }
+
+      /* 컨트롤 패널 (모바일 최적화: 하단 서랍형) */
+      .controls {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: rgba(0, 0, 0, 0.3);
+        padding: 20px 20px 40px 20px; /* 하단 여백 확보 */
+        border-radius: 20px 20px 0 0;
+        z-index: 9999;
+        max-height: 60vh; /* 화면의 60%까지만 차지 */
+        overflow-y: auto; /* 내부 스크롤 허용 */
+        box-sizing: border-box;
+        transform: translateY(110%); /* 기본적으로 숨김 */
+        transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+      }
+
+      .controls.active {
+        transform: translateY(0); /* 활성화 시 올라옴 */
+      }
+
+      .control-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        font-weight: bold;
+        font-size: 1.1rem;
+      }
+
+      .control-group {
+        margin-bottom: 15px;
+      }
+
+      label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+        margin-bottom: 8px;
+        color: #ccc;
+      }
+
+      /* 현재 값 표시용 span */
+      label span {
+        color: #4caf50;
+        font-weight: bold;
+      }
+
+      /* 슬라이더 스타일 (터치 친화적) */
+      input[type='range'] {
+        width: 100%;
+        height: 6px;
+        background: #444;
+        border-radius: 3px;
+        outline: none;
+        -webkit-appearance: none;
+      }
+
+      input[type='range']::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 24px; /* 터치 타겟 확대 */
+        height: 24px;
+        background: #4caf50;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+      }
+
+      /* 점 스타일 */
+      .tree-dot {
+        position: absolute;
+        background-color: #0f0;
+        border-radius: 50%;
+        /* 모바일 성능을 위해 box-shadow는 최소화하거나 제거 권장 */
+        /* box-shadow: 0 0 4px #0f0; */
+        pointer-events: none; /* 클릭 통과 */
+        will-change: transform, opacity;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="toggle-btn" id="toggleBtn">⚙️</div>
+
+    <div class="controls" id="controlsPanel">
+      <div class="control-header">
+        <span>Settings</span>
+      </div>
+
+      <div class="control-group">
+        <label>
+          Dots Count
+          <span id="val_dotsCountInput"></span>
+        </label>
+        <input type="range" id="dotsCountInput" min="10" max="150" value="50" />
+      </div>
+      <div class="control-group">
+        <label>X-axis Offset</label>
+        <input type="range" id="xOffsetSlider" min="-200" max="200" value="0" />
+      </div>
+      <div class="control-group">
+        <label>Y-axis Offset</label>
+        <input
+          type="range"
+          id="yOffsetSlider"
+          min="-1000"
+          max="300"
+          value="-350"
+        />
+      </div>
+      <div class="control-group">
+        <label>Tree Width (X Scale)</label>
+        <input type="range" id="xScaleSlider" min="20" max="300" value="200" />
+      </div>
+      <div class="control-group">
+        <label>Tree Tilt (Y Scale)</label>
+        <input type="range" id="yScaleSlider" min="0" max="100" value="20" />
+      </div>
+      <div class="control-group">
+        <label>Spiral Delay</label>
+        <input type="range" id="delaySlider" min="50" max="3000" value="2500" />
+      </div>
+      <div class="control-group">
+        <label>Vertical Gap</label>
+        <input
+          type="range"
+          id="dotGapSlider"
+          min="1"
+          max="50"
+          value="10"
+          step="1"
+        />
+      </div>
+      <div class="control-group">
+        <label>Taper (Cone Shape)</label>
+        <input
+          type="range"
+          id="dotXSmallerOffsetSlider"
+          min="-10"
+          max="20"
+          value="4"
+        />
+      </div>
+      <div class="control-group">
+        <label>Dot Size</label>
+        <input type="range" id="dotSizeSlider" min="2" max="20" value="6" />
+      </div>
+    </div>
+
+    <div id="dot-container"></div>
+
+    <script>
+      // UI 제어
+      const toggleBtn = document.getElementById('toggleBtn');
+      const controlsPanel = document.getElementById('controlsPanel');
+
+      toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // 이벤트 버블링 방지
+        controlsPanel.classList.toggle('active');
+        toggleBtn.innerHTML = controlsPanel.classList.contains('active')
+          ? '✖'
+          : '⚙️';
+      });
+
+      // 패널 외부 클릭 시 닫기
+      document.body.addEventListener('click', (e) => {
+        if (
+          controlsPanel.classList.contains('active') &&
+          !controlsPanel.contains(e.target) &&
+          e.target !== toggleBtn
+        ) {
+          controlsPanel.classList.remove('active');
+          toggleBtn.innerHTML = '⚙️';
+        }
+      });
+
+      // 요소 선택
+      const dotContainer = document.getElementById('dot-container');
+
+      // 슬라이더 요소들
+      const inputs = {
+        count: document.getElementById('dotsCountInput'),
+        xOffset: document.getElementById('xOffsetSlider'),
+        yOffset: document.getElementById('yOffsetSlider'),
+        xScale: document.getElementById('xScaleSlider'),
+        yScale: document.getElementById('yScaleSlider'),
+        delay: document.getElementById('delaySlider'),
+        gap: document.getElementById('dotGapSlider'),
+        taper: document.getElementById('dotXSmallerOffsetSlider'),
+        size: document.getElementById('dotSizeSlider'),
+      };
+
+      // 값 표시 업데이트 함수 (UX)
+      function updateLabel(input, id) {
+        const display = document.getElementById(`val_${id}`);
+        if (display) display.innerText = input.value;
+      }
+
+      // Dots Count 초기값 표시 연결
+      inputs.count.addEventListener('input', () =>
+        updateLabel(inputs.count, 'dotsCountInput')
+      );
+      updateLabel(inputs.count, 'dotsCountInput');
+
+      let treeDots = [];
+      let angle = 0;
+      let opacity_min = 0.2;
+      let opacity_max = 1.0;
+      let animationId;
+
+      function initDots() {
+        dotContainer.innerHTML = '';
+        const count = parseInt(inputs.count.value, 10);
+
+        for (let i = 0; i < count; i++) {
+          const newDot = document.createElement('span');
+          newDot.className = 'tree-dot';
+          dotContainer.appendChild(newDot);
+        }
+        treeDots = Array.from(document.querySelectorAll('.tree-dot'));
+      }
+
+      inputs.count.addEventListener('input', initDots);
+
+      function animate() {
+        // 값 캐싱 (Loop 최적화)
+        const xOffset = parseInt(inputs.xOffset.value, 10);
+        const yOffset = parseInt(inputs.yOffset.value, 10);
+        const xScale = parseInt(inputs.xScale.value, 10);
+        const yScale = parseInt(inputs.yScale.value, 10);
+        const delayVal = parseInt(inputs.delay.value, 10);
+        const dotGap = parseInt(inputs.gap.value, 10);
+        const taper = parseInt(inputs.taper.value, 10);
+        const baseSize = parseInt(inputs.size.value, 10);
+
+        const centerX = window.innerWidth / 2 + xOffset;
+        const centerY = window.innerHeight / 2 + yOffset;
+        const totalDots = treeDots.length;
+
+        treeDots.forEach((element, index) => {
+          const delay = (delayVal / totalDots) * index;
+          const currentAngle = angle - delay * 0.01;
+
+          // 아래(index가 큼)는 넓게, 위(index가 작음)는 좁게 -> 트리 모양
+          // Tree Shape Logic: index 0 is top
+          const radiusModifier = taper * (totalDots - index);
+          const currentRadius = xScale - radiusModifier;
+
+          const x = centerX + currentRadius * Math.cos(currentAngle);
+          const y = centerY + yScale * Math.sin(currentAngle);
+          const topPos = y + dotGap * index; // y축으로 나열
+
+          const depth = Math.sin(currentAngle); // -1 (뒤) ~ 1 (앞)
+
+          const opacity =
+            opacity_min + ((opacity_max - opacity_min) * (1 + depth)) / 2;
+
+          element.style.transform = `translate(${x}px, ${topPos}px)`; // left/top 대신 transform 사용 (성능 향상)
+          element.style.width = `${baseSize}px`;
+          element.style.height = `${baseSize}px`;
+          element.style.opacity = opacity;
+          element.style.zIndex = Math.floor(depth * 100);
+        });
+
+        angle += 0.02;
+        animationId = requestAnimationFrame(animate);
+      }
+
+      initDots();
+      animate();
+    </script>
+  </body>
+</html>
