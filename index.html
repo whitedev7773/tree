@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    <title>Mobile 3D Tree</title>
+    <title>트리</title>
     <style>
       body {
         margin: 0;
@@ -16,6 +16,17 @@
           Helvetica, Arial, sans-serif;
         overflow: hidden; /* 전체 스크롤 방지 */
         touch-action: none; /* 모바일에서 불필요한 제스처 방지 */
+      }
+
+      /* 눈 내리는 효과를 위한 캔버스 (추가됨) */
+      #snowCanvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0; /* 배경보다 위, 트리와 겹치게 배치 */
+        pointer-events: none; /* 클릭 이벤트를 통과시켜 조작 방해 안 함 */
       }
 
       /* 설정 토글 버튼 (플로팅 버튼) */
@@ -114,10 +125,7 @@
       /* 점 스타일 */
       .tree-dot {
         position: absolute;
-        /* background-color: #0f0; */
         border-radius: 50%;
-        /* 모바일 성능을 위해 box-shadow는 최소화하거나 제거 권장 */
-        /* box-shadow: 0 0 4px #0f0; */
         pointer-events: none; /* 클릭 통과 */
         will-change: transform, opacity;
       }
@@ -135,6 +143,8 @@
     </style>
   </head>
   <body>
+    <canvas id="snowCanvas"></canvas>
+
     <div class="toggle-btn" id="toggleBtn">⚙️</div>
 
     <div class="controls" id="controlsPanel">
@@ -205,19 +215,109 @@
     <div id="dot-container"></div>
 
     <script>
-      // UI 제어
+      // ==========================================
+      // [1] 눈 내리는 효과 (Snow Effect Logic)
+      // ==========================================
+      const snowCanvas = document.getElementById('snowCanvas');
+      const snowCtx = snowCanvas.getContext('2d');
+
+      let snowW = window.innerWidth;
+      let snowH = window.innerHeight;
+      snowCanvas.width = snowW;
+      snowCanvas.height = snowH;
+
+      const maxSnowflakes = 100; // 모바일 성능 고려하여 개수 제한
+      const snowflakes = [];
+
+      for (let i = 0; i < maxSnowflakes; i++) {
+        snowflakes.push({
+          x: Math.random() * snowW,
+          y: Math.random() * snowH,
+          r: Math.random() * 2 + 1, // 눈송이 크기
+          d: Math.random() * maxSnowflakes, // 밀도 계산용 (속도에 영향)
+        });
+      }
+
+      function drawSnow() {
+        snowCtx.clearRect(0, 0, snowW, snowH);
+        snowCtx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        snowCtx.beginPath();
+
+        for (let i = 0; i < maxSnowflakes; i++) {
+          const f = snowflakes[i];
+          snowCtx.moveTo(f.x, f.y);
+          snowCtx.arc(f.x, f.y, f.r, 0, Math.PI * 2, true);
+        }
+        snowCtx.fill();
+        updateSnow();
+        requestAnimationFrame(drawSnow);
+      }
+
+      let angleSnow = 0;
+      function updateSnow() {
+        angleSnow += 0.01;
+        for (let i = 0; i < maxSnowflakes; i++) {
+          const f = snowflakes[i];
+          // 아래로 떨어지는 움직임 + 좌우 흔들림(sin)
+          f.y += Math.cos(angleSnow + f.d) + 1 + f.r / 2;
+          f.x += Math.sin(angleSnow) * 2;
+
+          // 화면 밖으로 나가면 위로 리셋
+          if (f.x > snowW + 5 || f.x < -5 || f.y > snowH) {
+            if (i % 3 > 0) {
+              snowflakes[i] = {
+                x: Math.random() * snowW,
+                y: -10,
+                r: f.r,
+                d: f.d,
+              };
+            } else {
+              // 화면 오른쪽 끝에서 들어오는 느낌 추가
+              if (Math.sin(angleSnow) > 0) {
+                snowflakes[i] = {
+                  x: -5,
+                  y: Math.random() * snowH,
+                  r: f.r,
+                  d: f.d,
+                };
+              } else {
+                snowflakes[i] = {
+                  x: snowW + 5,
+                  y: Math.random() * snowH,
+                  r: f.r,
+                  d: f.d,
+                };
+              }
+            }
+          }
+        }
+      }
+
+      // 화면 크기 변경 시 캔버스 크기 재조정
+      window.addEventListener('resize', () => {
+        snowW = window.innerWidth;
+        snowH = window.innerHeight;
+        snowCanvas.width = snowW;
+        snowCanvas.height = snowH;
+      });
+
+      // 눈 애니메이션 시작
+      drawSnow();
+
+      // ==========================================
+      // [2] 기존 트리 로직 (Tree Logic)
+      // ==========================================
       const toggleBtn = document.getElementById('toggleBtn');
       const controlsPanel = document.getElementById('controlsPanel');
 
       toggleBtn.addEventListener('click', (e) => {
-        e.stopPropagation(); // 이벤트 버블링 방지
+        e.stopPropagation();
         controlsPanel.classList.toggle('active');
         toggleBtn.innerHTML = controlsPanel.classList.contains('active')
           ? '✖'
           : '⚙️';
       });
 
-      // 패널 외부 클릭 시 닫기
       document.body.addEventListener('click', (e) => {
         if (
           controlsPanel.classList.contains('active') &&
@@ -229,10 +329,8 @@
         }
       });
 
-      // 요소 선택
       const dotContainer = document.getElementById('dot-container');
 
-      // 슬라이더 요소들
       const inputs = {
         count: document.getElementById('dotsCountInput'),
         xOffset: document.getElementById('xOffsetSlider'),
@@ -245,13 +343,11 @@
         size: document.getElementById('dotSizeSlider'),
       };
 
-      // 값 표시 업데이트 함수 (UX)
       function updateLabel(input, id) {
         const display = document.getElementById(`val_${id}`);
         if (display) display.innerText = input.value;
       }
 
-      // Dots Count 초기값 표시 연결
       inputs.count.addEventListener('input', () =>
         updateLabel(inputs.count, 'dotsCountInput')
       );
@@ -278,7 +374,6 @@
       inputs.count.addEventListener('input', initDots);
 
       function animate() {
-        // 값 캐싱 (Loop 최적화)
         const xOffset = parseInt(inputs.xOffset.value, 10);
         const yOffset = parseInt(inputs.yOffset.value, 10);
         const xScale = parseInt(inputs.xScale.value, 10);
@@ -296,25 +391,26 @@
           const delay = (delayVal / totalDots) * index;
           const currentAngle = angle - delay * 0.01;
 
-          // 아래(index가 큼)는 넓게, 위(index가 작음)는 좁게 -> 트리 모양
-          // Tree Shape Logic: index 0 is top
           const radiusModifier = taper * (totalDots - index);
           const currentRadius = xScale - radiusModifier;
 
           const x = centerX + currentRadius * Math.cos(currentAngle);
           const y = centerY + yScale * Math.sin(currentAngle);
-          const topPos = y + dotGap * index; // y축으로 나열
+          const topPos = y + dotGap * index;
 
-          const depth = Math.sin(currentAngle); // -1 (뒤) ~ 1 (앞)
+          const depth = Math.sin(currentAngle);
 
           const opacity =
             opacity_min + ((opacity_max - opacity_min) * (1 + depth)) / 2;
 
-          element.style.transform = `translate(${x}px, ${topPos}px)`; // left/top 대신 transform 사용 (성능 향상)
+          element.style.transform = `translate(${x}px, ${topPos}px)`;
           element.style.width = `${baseSize}px`;
           element.style.height = `${baseSize}px`;
           element.style.opacity = opacity;
-          element.style.zIndex = Math.floor(depth * 100);
+          // 눈 내리는 효과와 겹치지 않게 z-index 조정 (눈은 0, 트리는 깊이에 따라 설정)
+          // depth가 -1~1이므로 0~200 사이로 변환하여 눈(z-index: 0) 위아래로 배치가 가능하게 할 수도 있으나
+          // 간단하게 눈보다 항상 위에 오도록 기본값을 높게 설정 (10 + ...)
+          element.style.zIndex = 10 + Math.floor(depth * 100);
         });
 
         angle += 0.02;
