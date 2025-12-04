@@ -114,12 +114,23 @@
       /* 점 스타일 */
       .tree-dot {
         position: absolute;
-        background-color: #0f0;
+        /* background-color: #0f0; */
         border-radius: 50%;
         /* 모바일 성능을 위해 box-shadow는 최소화하거나 제거 권장 */
         /* box-shadow: 0 0 4px #0f0; */
         pointer-events: none; /* 클릭 통과 */
         will-change: transform, opacity;
+      }
+
+      /* 1번째: 하얀색, 2번째: 초록색: 3번째:빨간색 */
+      .tree-dot:nth-child(3n + 1) {
+        background-color: #fff;
+      }
+      .tree-dot:nth-child(3n + 2) {
+        background-color: rgb(101, 248, 101);
+      }
+      .tree-dot:nth-child(3n + 3) {
+        background-color: rgb(255, 71, 71);
       }
     </style>
   </head>
@@ -187,7 +198,7 @@
       </div>
       <div class="control-group">
         <label>Dot Size</label>
-        <input type="range" id="dotSizeSlider" min="2" max="20" value="6" />
+        <input type="range" id="dotSizeSlider" min="2" max="20" value="10" />
       </div>
     </div>
 
