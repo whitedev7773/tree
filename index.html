@@ -260,7 +260,7 @@
           const f = snowflakes[i];
           // 아래로 떨어지는 움직임 + 좌우 흔들림(sin)
           f.y += Math.cos(angleSnow + f.d) + 1 + f.r / 2;
-          f.x += Math.sin(angleSnow) * 2;
+          f.x += Math.sin(angleSnow) * 0.2;
 
           // 화면 밖으로 나가면 위로 리셋
           if (f.x > snowW + 5 || f.x < -5 || f.y > snowH) {
