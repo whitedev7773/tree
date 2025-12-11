@@ -107,6 +107,56 @@ body {
   margin-bottom: 15px;
 }
 
+.emoji-palette {
+  margin-bottom: 12px;
+}
+.emoji-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.emoji-btn {
+  font-size: 18px;
+  padding: 6px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.emoji-btn.active {
+  outline: 2px solid #4caf50;
+  background: rgba(76, 175, 80, 0.12);
+}
+
+.emoji-controls {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+}
+.emoji-tool {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.emoji-tool[aria-pressed='true'] {
+  background: rgba(76, 175, 80, 0.12);
+  outline: 2px solid rgba(76, 175, 80, 0.16);
+}
+
+/* emoji decorations inside tree */
+.tree-emoji {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+  font-size: 18px; /* will be resized in JS to match base dot size */
+  transform-origin: center center;
+}
+
 label {
   display: flex;
   justify-content: space-between;
@@ -145,7 +195,7 @@ input[type='range']::-webkit-slider-thumb {
 .tree-dot {
   position: absolute;
   border-radius: 50%;
-  pointer-events: none; /* 클릭 통과 */
+  pointer-events: auto; /* allow clicking for decorations */
   will-change: transform, opacity;
 }
 
@@ -223,8 +273,8 @@ input[type='range']::-webkit-slider-thumb {
     display: none;
   }
 
-  /* when the panel is a left sidebar, ensure dot container cannot be covered */
+  /* when the panel is a left sidebar, ensure dot container is interactive */
   #dot-container {
-    pointer-events: none;
+    pointer-events: auto;
   }
 }

@@ -31,6 +31,24 @@
         <span>Settings</span>
       </div>
 
+      <div class="emoji-palette" id="emojiPalette">
+        <label>Decorations</label>
+        <div class="emoji-list">
+          <button type="button" class="emoji-btn" data-emoji="🎄">🎄</button>
+          <button type="button" class="emoji-btn" data-emoji="✨">✨</button>
+          <button type="button" class="emoji-btn" data-emoji="🎁">🎁</button>
+          <button type="button" class="emoji-btn" data-emoji="⭐️">⭐️</button>
+          <button type="button" class="emoji-btn" data-emoji="🍎">🍎</button>
+          <button type="button" class="emoji-btn" data-emoji="🔔">🔔</button>
+        </div>
+        <div class="emoji-controls">
+          <button id="eraserBtn" class="emoji-tool" aria-pressed="false">
+            🧽 Erase
+          </button>
+          <button id="clearEmojisBtn" class="emoji-tool">Clear All</button>
+        </div>
+      </div>
+
       <div class="control-group">
         <label>
           Dots Count
@@ -86,8 +104,18 @@
         />
       </div>
       <div class="control-group">
-        <label>Dot Size</label>
+        <label>
+          Dot Size
+          <span id="val_dotSizeSlider"></span>
+        </label>
         <input type="range" id="dotSizeSlider" min="2" max="20" value="10" />
+      </div>
+      <div class="control-group">
+        <label>
+          Emoji Size
+          <span id="val_emojiSizeSlider"></span>
+        </label>
+        <input type="range" id="emojiSizeSlider" min="8" max="64" value="24" />
       </div>
       <!-- share button moved to top-right actions -->
     </div>
