@@ -16,6 +16,17 @@ const ui = initUI();
 // Load state from URL params if present
 function parseUrlState() {
   const params = new URLSearchParams(window.location.search);
+  // prefer full base64-encoded state under 's'
+  if (params.has('s')) {
+    try {
+      const decoded = base64DecodeUnicode(params.get('s'));
+      const obj = JSON.parse(decoded);
+      return obj;
+    } catch (err) {
+      // fallthrough to legacy behavior if parse fails
+    }
+  }
+  // legacy support: simple query params (non-encoded)
   const allowed = [
     'count',
     'xOffset',
@@ -26,8 +37,7 @@ function parseUrlState() {
     'gap',
     'taper',
     'size',
-    'emojiSize',
-    'eraser',
+    'em',
   ];
   const found = {};
   for (const k of allowed) {
@@ -51,6 +61,27 @@ if (urlState) {
     if (ui.setEraserMode) ui.setEraserMode(true);
   }
 }
+// (Emojis load moved below after `tree` is initialized.)
+
+// --- encoding/decoding helpers for base64 JSON (Unicode-safe) ---
+function base64EncodeUnicode(str) {
+  // https://developer.mozilla.org/en-US/docs/Glossary/Base64
+  return btoa(
+    encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function (match, p1) {
+      return String.fromCharCode('0x' + p1);
+    })
+  );
+}
+
+function base64DecodeUnicode(str) {
+  return decodeURIComponent(
+    Array.prototype.map
+      .call(atob(str), function (c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      })
+      .join('')
+  );
+}
 
 // Start snow animation
 initSnow({ canvasSelector: '#snowCanvas', maxSnow: 100 });
@@ -61,6 +92,60 @@ const tree = initTree({
   inputs: ui.inputs,
   updateLabel: ui.updateLabel,
 });
+
+// Now load emojis if present in state (after tree is created). Supports both new 's' state and legacy 'em' param.
+if (urlState && typeof tree.addEmojiAtPoint === 'function') {
+  try {
+    const center =
+      typeof tree.getCenter === 'function'
+        ? tree.getCenter()
+        : { centerX: window.innerWidth / 2, centerY: window.innerHeight / 2 };
+    const emojisList = Array.isArray(urlState.emojis) ? urlState.emojis : null;
+    if (emojisList && emojisList.length > 0) {
+      for (const em of emojisList) {
+        const emoji = em.emoji;
+        const size = Number(em.size) || undefined;
+        let x, y;
+        if (typeof em.rx !== 'undefined') {
+          x = center.centerX + Number(em.rx);
+          y = center.centerY + Number(em.ry);
+        } else if (typeof em.x !== 'undefined' && typeof em.y !== 'undefined') {
+          x = Number(em.x);
+          y = Number(em.y);
+        } else {
+          continue;
+        }
+        tree.addEmojiAtPoint(x, y, emoji, size);
+      }
+    } else if (urlState.em) {
+      // legacy: decode em base64 blob
+      const json = base64DecodeUnicode(urlState.em);
+      const emojis = JSON.parse(json);
+      if (Array.isArray(emojis)) {
+        for (const em of emojis) {
+          const emoji = em.emoji;
+          const size = Number(em.size) || undefined;
+          let x, y;
+          if (typeof em.rx !== 'undefined') {
+            x = center.centerX + Number(em.rx);
+            y = center.centerY + Number(em.ry);
+          } else if (
+            typeof em.x !== 'undefined' &&
+            typeof em.y !== 'undefined'
+          ) {
+            x = Number(em.x);
+            y = Number(em.y);
+          } else {
+            continue;
+          }
+          tree.addEmojiAtPoint(x, y, emoji, size);
+        }
+      }
+    }
+  } catch (err) {
+    // ignore parsing errors
+  }
+}
 
 // Clicking anywhere (outside UI) while an emoji is selected places it at that location
 function isClickOnUI(target) {
@@ -164,10 +249,24 @@ if (shareModal) {
 
 /**
  * Share current state by copying a URL with query string to clipboard.
+ * Only UI control settings (via ui.getState) and emoji decorations (tree.getAllEmojis)
+ * are encoded in `s`. Ephemeral UI states (emojiSize slider, selected emoji, eraser)
+ * are intentionally excluded.
  */
 async function shareCurrentState() {
   const state = ui.getState();
-  const params = new URLSearchParams(state).toString();
+  const stateObj = { ...state };
+  // include emoji placements
+  if (typeof tree.getAllEmojis === 'function') {
+    try {
+      const emojis = tree.getAllEmojis();
+      if (Array.isArray(emojis) && emojis.length > 0) stateObj.emojis = emojis;
+    } catch (err) {
+      // ignore
+    }
+  }
+  const s = base64EncodeUnicode(JSON.stringify(stateObj));
+  const params = new URLSearchParams({ s }).toString();
   const url = `${window.location.origin}${window.location.pathname}?${params}`;
   try {
     await navigator.clipboard.writeText(url);

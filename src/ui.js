@@ -109,12 +109,10 @@ export function initUI() {
       gap: inputs.gap.value,
       taper: inputs.taper.value,
       size: inputs.size.value,
-      emojiSize: inputs.emojiSize.value,
-      eraser: eraserBtn
-        ? eraserBtn.getAttribute('aria-pressed') === 'true'
-        : false,
     };
   }
+  // Note: emojiSize, current selection and eraser mode are intentionally
+  // excluded from this state since they are ephemeral UI-only properties.
 
   /**
    * Apply a plain object state to the inputs. Non-present fields are ignored.

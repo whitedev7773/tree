@@ -96,9 +96,24 @@ export function initTree({
    * Animation loop which positions and styles dots on each frame.
    * @private
    */
-  function animate() {
+  function getCenter() {
     const xOffset = parseInt(treeInputs.xOffset.value, 10);
     const yOffset = parseInt(treeInputs.yOffset.value, 10);
+    const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+    let sidebarOffset = 0;
+    if (isDesktop) {
+      const panel = document.querySelector('.controls');
+      if (panel) {
+        const rect = panel.getBoundingClientRect();
+        sidebarOffset = rect.width / 2;
+      }
+    }
+    const centerX = window.innerWidth / 2 + sidebarOffset + xOffset;
+    const centerY = window.innerHeight / 2 + yOffset;
+    return { centerX, centerY };
+  }
+
+  function animate() {
     const xScale = parseInt(treeInputs.xScale.value, 10);
     const yScale = parseInt(treeInputs.yScale.value, 10);
     const delayVal = parseInt(treeInputs.delay.value, 10);
@@ -117,8 +132,7 @@ export function initTree({
         sidebarOffset = rect.width / 2;
       }
     }
-    const centerX = window.innerWidth / 2 + sidebarOffset + xOffset;
-    const centerY = window.innerHeight / 2 + yOffset;
+    const { centerX, centerY } = getCenter();
     const totalDots = treeDots.length;
 
     treeDots.forEach((element, index) => {
@@ -144,7 +158,21 @@ export function initTree({
       const baseZ = 10 + Math.floor(depth * 100);
       element.style.zIndex = baseZ;
 
-      // emojis are static and are positioned on creation; nothing to do each frame
+      // reposition any emojis relative to the tree center
+      for (const meta of emojiMap.values()) {
+        if (!meta || !meta.el) continue;
+        const size =
+          meta.size || parseInt(treeInputs.emojiSize?.value || 24, 10) || 24;
+        // meta.rx/meta.ry stored as offsets relative to center
+        const rx = typeof meta.rx === 'number' ? meta.rx : meta.x - centerX;
+        const ry = typeof meta.ry === 'number' ? meta.ry : meta.y - centerY;
+        meta.rx = rx;
+        meta.ry = ry;
+        const left = Math.round(centerX + rx - size / 2);
+        const top = Math.round(centerY + ry - size / 2);
+        meta.el.style.left = `${left}px`;
+        meta.el.style.top = `${top}px`;
+      }
     });
 
     angle += 0.02;
@@ -175,11 +203,11 @@ export function initTree({
      * @param {string|null} emoji - emoji char to set, or null to remove
      */
     /**
-     * Add an emoji decoration to a dot index. Emoji is placed at the current page position of the dot and remains static.
+     * Add an emoji decoration to a dot index. Emoji is placed at the current page position of the dot and is anchored by a relative offset (rx/ry) from the tree center so it moves with centering changes.
      * @param {number} index - index of the dot to decorate
      * @param {string|null} emoji - emoji char to set, or null to remove
      */
-    addEmojiToDot(index, emoji) {
+    addEmojiToDot(index, emoji, sizePx) {
       if (index < 0 || index >= treeDots.length) return;
       if (!emoji) {
         const existingId = findEmojiIdByDotIndex(index);
@@ -195,6 +223,9 @@ export function initTree({
       const rect = dotEl.getBoundingClientRect();
       const x = Math.round(rect.left + rect.width / 2);
       const y = Math.round(rect.top + rect.height / 2);
+      const { centerX, centerY } = getCenter();
+      const rx = x - centerX;
+      const ry = y - centerY;
       const existingId = findEmojiIdByDotIndex(index);
       if (existingId) {
         const meta = emojiMap.get(existingId);
@@ -206,10 +237,14 @@ export function initTree({
       el.textContent = emoji;
       document.body.appendChild(el);
       const id = emojiIdCounter++;
-      const emSize = parseInt(treeInputs.emojiSize?.value || 24, 10) || 24;
+      const emSize =
+        typeof sizePx === 'number'
+          ? sizePx
+          : parseInt(treeInputs.emojiSize?.value || 24, 10) || 24;
       el.style.position = 'fixed';
-      el.style.left = `${x - emSize / 2}px`;
-      el.style.top = `${y - emSize / 2}px`;
+      const { centerX: cX, centerY: cY } = getCenter();
+      el.style.left = `${cX + rx - emSize / 2}px`;
+      el.style.top = `${cY + ry - emSize / 2}px`;
       el.style.fontSize = `${emSize}px`;
       el.style.width = `${emSize}px`;
       el.style.height = `${emSize}px`;
@@ -218,7 +253,16 @@ export function initTree({
       el.style.pointerEvents = 'none';
       el.style.zIndex = 9999;
       el.dataset.emojiId = String(id);
-      emojiMap.set(id, { el, x, y, emoji, dotIndex: index });
+      emojiMap.set(id, {
+        el,
+        x,
+        y,
+        rx,
+        ry,
+        emoji,
+        dotIndex: index,
+        size: emSize,
+      });
       // set interactivity according to default (none) - UI decides later
       el.style.pointerEvents = 'none';
       return id;
@@ -236,11 +280,23 @@ export function initTree({
      * @param {number} sizePx - font size in px for emojis
      */
     setEmojiSize(sizePx) {
-      for (const el of emojiMap.values()) {
-        el.style.fontSize = `${sizePx}px`;
-        el.style.width = `${sizePx}px`;
-        el.style.height = `${sizePx}px`;
-        el.style.lineHeight = `${sizePx}px`;
+      for (const meta of emojiMap.values()) {
+        if (!meta || !meta.el) continue;
+        meta.size = sizePx;
+        meta.el.style.fontSize = `${sizePx}px`;
+        meta.el.style.width = `${sizePx}px`;
+        meta.el.style.height = `${sizePx}px`;
+        meta.el.style.lineHeight = `${sizePx}px`;
+        const { centerX, centerY } = getCenter();
+        if (typeof meta.rx === 'number' && typeof meta.ry === 'number') {
+          meta.el.style.left = `${Math.round(
+            centerX + meta.rx - sizePx / 2
+          )}px`;
+          meta.el.style.top = `${Math.round(centerY + meta.ry - sizePx / 2)}px`;
+        } else if (typeof meta.x === 'number' && typeof meta.y === 'number') {
+          meta.el.style.left = `${Math.round(meta.x - sizePx / 2)}px`;
+          meta.el.style.top = `${Math.round(meta.y - sizePx / 2)}px`;
+        }
       }
     },
     getEmojiForDot(index) {
@@ -249,23 +305,55 @@ export function initTree({
       return meta ? meta.emoji : null;
     },
     /**
+     * Return the current tree center coordinates.
+     * @returns {{centerX:number,centerY:number}}
+     */
+    getCenter() {
+      return getCenter();
+    },
+    /**
+     * Return all emojis and their metadata for serialization.
+     * @returns {Array<{x:number,y:number,emoji:string,size:number,dotIndex:number|null}>}
+     */
+    getAllEmojis() {
+      const out = [];
+      for (const meta of emojiMap.values()) {
+        if (!meta) continue;
+        out.push({
+          rx: meta.rx,
+          ry: meta.ry,
+          emoji: meta.emoji,
+          size: meta.size || 24,
+          dotIndex: meta.dotIndex,
+        });
+      }
+      return out;
+    },
+    /**
      * Add an emoji at an arbitrary page coordinate (clientX/clientY) and return id.
      * @param {number} x - clientX coordinate.
      * @param {number} y - clientY coordinate.
      * @param {string} emoji - emoji character.
      * @returns {number} id of inserted emoji
      */
-    addEmojiAtPoint(x, y, emoji) {
+    addEmojiAtPoint(x, y, emoji, sizePx) {
       if (!emoji) return null;
       const el = document.createElement('span');
       el.className = 'tree-emoji';
       el.textContent = emoji;
       document.body.appendChild(el);
       const id = emojiIdCounter++;
-      const emSize = parseInt(treeInputs.emojiSize?.value || 24, 10) || 24;
+      const emSize =
+        typeof sizePx === 'number'
+          ? sizePx
+          : parseInt(treeInputs.emojiSize?.value || 24, 10) || 24;
       el.style.position = 'fixed';
-      el.style.left = `${Math.round(x - emSize / 2)}px`;
-      el.style.top = `${Math.round(y - emSize / 2)}px`;
+      // compute relative offset and set initial position based on tree center
+      const { centerX, centerY } = getCenter();
+      const rx = Math.round(x - centerX);
+      const ry = Math.round(y - centerY);
+      el.style.left = `${Math.round(centerX + rx - emSize / 2)}px`;
+      el.style.top = `${Math.round(centerY + ry - emSize / 2)}px`;
       el.style.fontSize = `${emSize}px`;
       el.style.width = `${emSize}px`;
       el.style.height = `${emSize}px`;
@@ -273,9 +361,17 @@ export function initTree({
       el.style.textAlign = 'center';
       el.style.pointerEvents = 'none';
       el.style.zIndex = 9999;
-      emojiMap.set(id, { el, x, y, emoji, dotIndex: null });
       el.dataset.emojiId = String(id);
-      el.style.pointerEvents = 'none';
+      emojiMap.set(id, {
+        el,
+        x,
+        y,
+        rx,
+        ry,
+        emoji,
+        dotIndex: null,
+        size: emSize,
+      });
       return id;
     },
     removeEmojiById(id) {
