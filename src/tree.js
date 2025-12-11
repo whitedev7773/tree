@@ -1,5 +1,31 @@
-// tree.js - tree dots, animation and input wiring
+/**
+ * Tree module which manages tree dot creation and animation.
+ * @module tree
+ */
+
+/**
+ * @typedef {Object} TreeInputs
+ * @property {HTMLInputElement} count
+ * @property {HTMLInputElement} xOffset
+ * @property {HTMLInputElement} yOffset
+ * @property {HTMLInputElement} xScale
+ * @property {HTMLInputElement} yScale
+ * @property {HTMLInputElement} delay
+ * @property {HTMLInputElement} gap
+ * @property {HTMLInputElement} taper
+ * @property {HTMLInputElement} size
+ */
+
 let animationId = null;
+
+/**
+ * Initialize the tree animation and wire inputs.
+ * @param {Object} options
+ * @param {string} [options.dotContainerSelector='#dot-container'] - CSS selector for dot container.
+ * @param {TreeInputs} options.inputs - The control inputs.
+ * @param {function(HTMLInputElement,string): void} [options.updateLabel] - Optional label update function from UI.
+ * @returns {{stop: function(): void}} Stop function that cancels animation and removes listeners.
+ */
 export function initTree({
   dotContainerSelector = '#dot-container',
   inputs,
@@ -8,6 +34,12 @@ export function initTree({
   const dotContainer = document.querySelector(dotContainerSelector);
   if (!dotContainer) return { stop: () => {} };
 
+  /**
+   * Small wrapper around the provided `updateLabel` function that checks for existence.
+   * @param {HTMLInputElement} inp
+   * @param {string} id
+   * @private
+   */
   function updateLabelWrapper(inp, id) {
     if (updateLabel) updateLabel(inp, id);
   }
@@ -19,6 +51,10 @@ export function initTree({
   let opacity_min = 0.2;
   let opacity_max = 1.0;
 
+  /**
+   * Initialize/replace the tree dots inside the container based on `count` input.
+   * @private
+   */
   function initDots() {
     dotContainer.innerHTML = '';
     const count = parseInt(treeInputs.count.value, 10);
@@ -30,6 +66,10 @@ export function initTree({
     treeDots = Array.from(dotContainer.querySelectorAll('.tree-dot'));
   }
 
+  /**
+   * Animation loop which positions and styles dots on each frame.
+   * @private
+   */
   function animate() {
     const xOffset = parseInt(treeInputs.xOffset.value, 10);
     const yOffset = parseInt(treeInputs.yOffset.value, 10);

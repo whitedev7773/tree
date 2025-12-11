@@ -1,4 +1,15 @@
-// snow.js - snow canvas animation
+/**
+ * Snow animation module.
+ * @module snow
+ */
+
+/**
+ * Initialize a snow animation on a canvas element.
+ * @param {Object} [options] Configuration options
+ * @param {string} [options.canvasSelector='#snowCanvas'] - CSS selector for canvas.
+ * @param {number} [options.maxSnow=100] - Maximum number of snowflakes.
+ * @returns {{stop: function(): void}} An object with a `stop` method to cancel animation and cleanup.
+ */
 export function initSnow({
   canvasSelector = '#snowCanvas',
   maxSnow = 100,
@@ -24,6 +35,10 @@ export function initSnow({
     });
   }
 
+  /**
+   * Render a single animation frame of the snow.
+   * @private
+   */
   function drawSnow() {
     snowCtx.clearRect(0, 0, snowW, snowH);
     snowCtx.fillStyle = 'rgba(255, 255, 255, 0.3)';
@@ -40,6 +55,10 @@ export function initSnow({
   }
 
   let angleSnow = 0;
+  /**
+   * Update internal snowflake positions for the next frame.
+   * @private
+   */
   function updateSnow() {
     angleSnow += 0.01;
     for (let i = 0; i < maxSnowflakes; i++) {
@@ -76,6 +95,10 @@ export function initSnow({
     }
   }
 
+  /**
+   * Resize handler to keep canvas matching window size.
+   * @private
+   */
   function handleResize() {
     snowW = window.innerWidth;
     snowH = window.innerHeight;

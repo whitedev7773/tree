@@ -1,4 +1,25 @@
-// ui.js - UI controls and helpers
+/**
+ * UI module for the settings panel and control elements.
+ * @module ui
+ */
+
+/**
+ * @typedef {Object} Inputs
+ * @property {HTMLInputElement} count
+ * @property {HTMLInputElement} xOffset
+ * @property {HTMLInputElement} yOffset
+ * @property {HTMLInputElement} xScale
+ * @property {HTMLInputElement} yScale
+ * @property {HTMLInputElement} delay
+ * @property {HTMLInputElement} gap
+ * @property {HTMLInputElement} taper
+ * @property {HTMLInputElement} size
+ */
+
+/**
+ * Initialize UI controls and return useful references.
+ * @returns {{toggleBtn: Element, controlsPanel: Element, inputs: Inputs, updateLabel: function(HTMLInputElement, string): void}}
+ */
 export function initUI() {
   const toggleBtn = document.getElementById('toggleBtn');
   const controlsPanel = document.getElementById('controlsPanel');
@@ -34,6 +55,11 @@ export function initUI() {
     size: document.getElementById('dotSizeSlider'),
   };
 
+  /**
+   * Update the visible label for a range input.
+   * @param {HTMLInputElement} input - The input element whose value to display.
+   * @param {string} id - The input id used to resolve the display span (val_${id}).
+   */
   function updateLabel(input, id) {
     const display = document.getElementById(`val_${id}`);
     if (display) display.innerText = input.value;
