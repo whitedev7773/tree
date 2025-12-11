@@ -197,3 +197,34 @@ input[type='range']::-webkit-slider-thumb {
   font-weight: 600;
   cursor: pointer;
 }
+
+/* Desktop dashboard: show controls as a left sidebar and hide floating buttons */
+@media (min-width: 1024px) {
+  .controls {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 320px;
+    max-height: 100vh;
+    border-radius: 0;
+    transform: none !important; /* always visible */
+    padding: 24px 16px;
+    overflow-y: auto;
+  }
+
+  /* place the control header at the top when it's a left dashboard */
+  .control-header {
+    margin-bottom: 18px;
+  }
+
+  /* hide floating action buttons on desktop since the controls are always visible */
+  .fab-actions {
+    display: none;
+  }
+
+  /* when the panel is a left sidebar, ensure dot container cannot be covered */
+  #dot-container {
+    pointer-events: none;
+  }
+}

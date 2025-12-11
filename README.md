@@ -26,4 +26,9 @@ Share and Load State via URL
 
 When clicking the share button, a confirmation modal will appear with "Copied!" and an OK button.
 
+Responsive behavior
+
+- On larger screens (desktop), the controls are displayed as a left-side dashboard and are always visible.
+- On smaller screens (mobile), the controls remain as a bottom drawer and are toggled with the settings button.
+
 Example: - http://localhost:8000/?count=50&xOffset=0&yOffset=-350&xScale=200&yScale=20&delay=2500&gap=10&taper=4&size=10

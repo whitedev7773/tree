@@ -80,7 +80,18 @@ export function initTree({
     const taper = parseInt(treeInputs.taper.value, 10);
     const baseSize = parseInt(treeInputs.size.value, 10);
 
-    const centerX = window.innerWidth / 2 + xOffset;
+    // If controls are visible as a left sidebar on desktop, offset the tree center
+    const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+    let sidebarOffset = 0;
+    if (isDesktop) {
+      const panel = document.querySelector('.controls');
+      if (panel) {
+        const rect = panel.getBoundingClientRect();
+        // Add half of the panel width to the center calculation so the tree centers in the remaining area
+        sidebarOffset = rect.width / 2;
+      }
+    }
+    const centerX = window.innerWidth / 2 + sidebarOffset + xOffset;
     const centerY = window.innerHeight / 2 + yOffset;
     const totalDots = treeDots.length;
 
