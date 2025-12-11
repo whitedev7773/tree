@@ -115,6 +115,7 @@ ui.inputs.emojiSize.addEventListener('input', () => {
 
 // Share button wiring + modal helper
 const shareBtn = document.getElementById('shareBtn');
+const shareBtnDesktop = document.getElementById('shareBtnDesktop');
 const shareModal = document.getElementById('shareModal');
 const shareModalMsg = document.getElementById('shareModalMsg');
 const shareModalOk = document.getElementById('shareModalOk');
@@ -161,22 +162,27 @@ if (shareModal) {
   });
 }
 
-if (shareBtn) {
-  shareBtn.addEventListener('click', async () => {
-    const state = ui.getState();
-    const params = new URLSearchParams(state).toString();
-    const url = `${window.location.origin}${window.location.pathname}?${params}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      openModal('Copied!');
-      // Update browser URL without reloading
-      window.history.replaceState({}, '', `?${params}`);
-    } catch (err) {
-      // fallback: show the URL in the modal for manual copy
-      openModal(url);
-    }
-  });
+/**
+ * Share current state by copying a URL with query string to clipboard.
+ */
+async function shareCurrentState() {
+  const state = ui.getState();
+  const params = new URLSearchParams(state).toString();
+  const url = `${window.location.origin}${window.location.pathname}?${params}`;
+  try {
+    await navigator.clipboard.writeText(url);
+    openModal('Copied!');
+    // Update browser URL without reloading
+    window.history.replaceState({}, '', `?${params}`);
+  } catch (err) {
+    // fallback: show the URL in the modal for manual copy
+    openModal(url);
+  }
 }
+
+if (shareBtn) shareBtn.addEventListener('click', () => shareCurrentState());
+if (shareBtnDesktop)
+  shareBtnDesktop.addEventListener('click', () => shareCurrentState());
 
 // wire UI callbacks for eraser and clear
 if (ui.onEraserToggle)

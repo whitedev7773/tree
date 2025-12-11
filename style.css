@@ -103,6 +103,23 @@ body {
   font-size: 1.1rem;
 }
 
+/* desktop-only share button in the control header */
+.share-desktop {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #fff;
+  cursor: pointer;
+}
+
+@media (min-width: 1024px) {
+  .share-desktop {
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
 .control-group {
   margin-bottom: 15px;
 }
