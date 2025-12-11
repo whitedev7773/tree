@@ -18,10 +18,11 @@
 
 /**
  * Initialize UI controls and return useful references.
- * @returns {{toggleBtn: Element, controlsPanel: Element, inputs: Inputs, updateLabel: function(HTMLInputElement, string): void}}
+ * @returns {{toggleBtn: Element, controlsPanel: Element, inputs: Inputs, updateLabel: function(HTMLInputElement, string): void, getState: function(): Object, setState: function(Object): void}}
  */
 export function initUI() {
   const toggleBtn = document.getElementById('toggleBtn');
+  const shareBtn = document.getElementById('shareBtn');
   const controlsPanel = document.getElementById('controlsPanel');
 
   toggleBtn.addEventListener('click', (e) => {
@@ -36,7 +37,8 @@ export function initUI() {
     if (
       controlsPanel.classList.contains('active') &&
       !controlsPanel.contains(e.target) &&
-      e.target !== toggleBtn
+      !toggleBtn.contains(e.target) &&
+      !(shareBtn && shareBtn.contains(e.target))
     ) {
       controlsPanel.classList.remove('active');
       toggleBtn.innerHTML = '⚙️';
@@ -68,5 +70,45 @@ export function initUI() {
   // initialize display for count
   updateLabel(inputs.count, 'dotsCountInput');
 
-  return { toggleBtn, controlsPanel, inputs, updateLabel };
+  /**
+   * Get the current state from inputs as a plain object of values.
+   * @returns {Object<string, string|number>}
+   */
+  /**
+   * Return a simple object representing current input values that can be serialized.
+   * @returns {{count: string, xOffset: string, yOffset: string, xScale: string, yScale: string, delay: string, gap: string, taper: string, size: string}}
+   */
+  function getState() {
+    return {
+      count: inputs.count.value,
+      xOffset: inputs.xOffset.value,
+      yOffset: inputs.yOffset.value,
+      xScale: inputs.xScale.value,
+      yScale: inputs.yScale.value,
+      delay: inputs.delay.value,
+      gap: inputs.gap.value,
+      taper: inputs.taper.value,
+      size: inputs.size.value,
+    };
+  }
+
+  /**
+   * Apply a plain object state to the inputs. Non-present fields are ignored.
+   * @param {Object<string, string|number>} state
+   */
+  /**
+   * Set inputs from an object. This will update labels and dispatch `input` events for listeners.
+   * @param {Object<string, string|number>} state - Keys correspond to input names (count, xOffset, ...).
+   */
+  function setState(state = {}) {
+    Object.keys(state).forEach((k) => {
+      if (!inputs[k]) return;
+      inputs[k].value = String(state[k]);
+      updateLabel(inputs[k], k === 'count' ? 'dotsCountInput' : k);
+      // Dispatch input event so other listeners respond
+      inputs[k].dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  }
+
+  return { toggleBtn, controlsPanel, inputs, updateLabel, getState, setState };
 }

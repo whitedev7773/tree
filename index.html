@@ -12,7 +12,19 @@
   <body>
     <canvas id="snowCanvas"></canvas>
 
-    <div class="toggle-btn" id="toggleBtn">⚙️</div>
+    <div class="fab-actions">
+      <div
+        class="toggle-btn"
+        id="toggleBtn"
+        role="button"
+        aria-label="Settings"
+      >
+        ⚙️
+      </div>
+      <button class="share-btn" id="shareBtn" aria-label="Share settings">
+        🔗
+      </button>
+    </div>
 
     <div class="controls" id="controlsPanel">
       <div class="control-header">
@@ -77,9 +89,26 @@
         <label>Dot Size</label>
         <input type="range" id="dotSizeSlider" min="2" max="20" value="10" />
       </div>
+      <!-- share button moved to top-right actions -->
     </div>
 
     <div id="dot-container"></div>
+
+    <!-- Share confirmation modal -->
+    <div
+      class="modal-overlay"
+      id="shareModal"
+      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="modal-content" role="document">
+        <p id="shareModalMsg" aria-live="assertive">Copied!</p>
+        <div class="modal-actions">
+          <button id="shareModalOk">OK</button>
+        </div>
+      </div>
+    </div>
 
     <script type="module" src="script.js"></script>
   </body>
